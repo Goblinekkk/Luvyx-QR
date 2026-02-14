@@ -3,76 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Luvyx QR</title>
+    <title>Luvyx Hub & QR</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #0b0b0b; color: #e0e0e0; text-align: center; padding: 20px; }
-        .container { max-width: 500px; margin: auto; background: #1a1a1a; padding: 20px; border-radius: 15px; border: 1px solid #bc13fe; }
-        button { background: #bc13fe; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 10px; }
-        input { padding: 10px; width: 80%; border-radius: 5px; border: none; margin-bottom: 10px; }
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; }
-        #result { margin-top: 20px; word-wrap: break-word; color: #bc13fe; font-weight: bold; }
-        #qrcode-gen { margin-top: 20px; display: flex; justify-content: center; background: white; padding: 10px; border-radius: 10px; display: none; }
+        :root {
+            --primary: #bc13fe;
+            --bg: #0b0b0b;
+            --card: #1a1a1a;
+            --text: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1, h2 { color: var(--primary); }
+        
+        /* Styl pro tlačítka aplikací */
+        .app-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: var(--card);
+            border: 1px solid var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .app-button:hover { background: var(--primary); transform: scale(1.02); }
+
+        /* Sekce pro QR */
+        .qr-section {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid #333;
+            margin-top: 30px;
+            width: 100%;
+        }
+        #reader {
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            background: black;
+        }
+        .result-box {
+            margin: 15px 0;
+            padding: 10px;
+            background: #000;
+            border-radius: 8px;
+            word-break: break-all;
+            min-height: 40px;
+        }
+        input[type="text"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--primary);
+            background: #000;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .btn-action {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        #qrcode-gen {
+            display: flex;
+            justify-content: center;
+            padding: 15px;
+            background: white; /* QR kódy musí být na světlém pro čitelnost */
+            border-radius: 10px;
+            margin: 15px auto;
+            width: 200px;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Luvyx QR</h1>
+    <h1>Luvyx</h1>
     
-    <div id="reader"></div>
-    <p id="result">Výsledek se zobrazí zde</p>
-    
-    <input type="file" id="qr-input-file" accept="image/*" style="display:none">
-    <button onclick="document.getElementById('qr-input-file').click()">Nahrát z obrázku</button>
+    <a href="#" class="app-button">Luvyx Video</a>
+    <a href="#" class="app-button">Nová Aplikace 1</a>
+    <a href="#" class="app-button">Nová Aplikace 2</a>
 
-    <hr style="border: 0.5px solid #333; margin: 20px 0;">
+    <div class="qr-section">
+        <h2>Luvyx QR</h2>
+        
+        <div id="reader"></div>
+        <div class="result-box" id="result">Naskenujte kód nebo nahrajte fotku</div>
+        
+        <input type="file" id="qr-input-file" accept="image/*" style="display:none">
+        <button class="btn-action" onclick="document.getElementById('qr-input-file').click()">Nahrát obrázek</button>
+        <button class="btn-action" onclick="location.reload()">Resetovat kameru</button>
 
-    <h3>Generovat QR</h3>
-    <input type="text" id="qr-text" placeholder="Vlož odkaz nebo text">
-    <button onclick="generateQR()">Vytvořit</button>
-    <div id="qrcode-gen"></div>
+        <hr style="border: 0.1px solid #333; margin: 25px 0;">
+
+        <h3>Generátor</h3>
+        <input type="text" id="qr-text" placeholder="Vlož odkaz pro tvůj QR kód">
+        <button class="btn-action" onclick="generateQR()">Vytvořit QR</button>
+        <div id="qrcode-gen"></div>
+        <button id="download-btn" class="btn-action" style="display:none; background:#444;" onclick="downloadQR()">Stáhnout jako obrázek</button>
+    </div>
 </div>
 
 <script>
-    // 1. SKENOVÁNÍ Z KAMERY
-    const html5QrCode = new Html5Qrcode("reader");
-    const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-        document.getElementById('result').innerHTML = `<a href="${decodedText}" target="_blank" style="color:#bc13fe">${decodedText}</a>`;
-        html5QrCode.stop();
-    };
-    
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-    html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback);
+    const resultElement = document.getElementById('result');
 
-    // 2. SKENOVÁNÍ Z OBRÁZKU
-    const fileInput = document.getElementById('qr-input-file');
-    fileInput.addEventListener('change', e => {
-        if (e.target.files.length == 0) return;
-        const imageFile = e.target.files[0];
-        html5QrCode.scanFile(imageFile, true)
-            .then(decodedText => {
-                document.getElementById('result').innerHTML = `<a href="${decodedText}" target="_blank" style="color:#bc13fe">${decodedText}</a>`;
-            })
-            .catch(err => alert("QR kód nenalezen: " + err));
+    // --- 1. SKENOVÁNÍ ---
+    const html5QrCode = new Html5Qrcode("reader");
+    
+    // Automatický start kamery
+    html5QrCode.start(
+        { facingMode: "environment" }, 
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        (decodedText) => {
+            resultElement.innerHTML = `Nalezeno: <a href="${decodedText}" target="_blank" style="color:var(--primary)">${decodedText}</a>`;
+        }
+    ).catch(err => {
+        resultElement.innerText = "Kamera není dostupná (zkontrolujte oprávnění).";
     });
 
-    // 3. GENEROVÁNÍ QR KÓDU
+    // Skenování z nahraného souboru
+    document.getElementById('qr-input-file').addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        resultElement.innerText = "Chroustám obrázek...";
+        html5QrCode.scanFile(file, true)
+            .then(decodedText => {
+                resultElement.innerHTML = `Z obrázku: <a href="${decodedText}" target="_blank" style="color:var(--primary)">${decodedText}</a>`;
+            })
+            .catch(err => {
+                resultElement.innerText = "V tomto obrázku jsem nic nenašel.";
+            });
+    });
+
+    // --- 2. GENEROVÁNÍ ---
     function generateQR() {
         const text = document.getElementById('qr-text').value;
         const container = document.getElementById('qrcode-gen');
+        const dlBtn = document.getElementById('download-btn');
+        
         container.innerHTML = "";
+        if (!text.trim()) return alert("Nejdřív něco napiš!");
+
         container.style.display = "block";
-        if (text.trim() !== "") {
-            new QRCode(container, {
-                text: text,
-                width: 200,
-                height: 200,
-                colorDark : "#000000",
-                colorLight : "#ffffff"
-            });
+        new QRCode(container, {
+            text: text,
+            width: 200,
+            height: 200
+        });
+        dlBtn.style.display = "inline-block";
+    }
+
+    // --- 3. STAŽENÍ ---
+    function downloadQR() {
+        const qrCanvas = document.querySelector('#qrcode-gen canvas');
+        const qrImg = document.querySelector('#qrcode-gen img');
+        let dataUrl;
+
+        if (qrCanvas) {
+            dataUrl = qrCanvas.toDataURL("image/png");
+        } else if (qrImg) {
+            dataUrl = qrImg.src;
         }
+
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = 'luvyx-qr.png';
+        link.click();
     }
 </script>
 
